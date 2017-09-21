@@ -128,8 +128,18 @@ func check(err error){
         if err != nil { log.Fatal(err) }
 }
 
-//========================================================================================
+// pwd returns the current working directory through which the binary is invoked.
+// used to save the csv file.
+func pwd() string {
+    pwd, err := os.Getwd()
+    if err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }
+    return pwd 
+}
 
+//========================================================================================
 func main() {
 
 	msg := fmt.Sprintln("URL to process.\nExample:\n./extractData.go http://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10?src=topads\n")
@@ -164,7 +174,7 @@ func main() {
 
 	pLinks := getVideoLinks(buf)
 	record := fmt.Sprintln(pId + "\t" + pUrl + "\t" + pLinks)
-	filePath := "/home/yogesh/GoCodes/WebCrawler/TokoProductDetails.csv"
+	filePath :=  pwd() + "/TokoProductDetails.csv"
 	WriteToFile(filePath, record)
 }
 
