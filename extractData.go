@@ -76,7 +76,7 @@ func WriteToFile(filePath, record string) {
 	if err != nil {
 		//                fmt.Println("File open failed for writing failure counts")
 		//                return
-		fmt.Println("File doesn't exists. File will be created with the headers.")
+		fmt.Println("File doesn't exists. File will be created with the headers before adding data.")
 		// If file does not exists then create it with the header and write records.
 		file, err1 := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err1 != nil {
@@ -84,13 +84,15 @@ func WriteToFile(filePath, record string) {
 			return
 		}
 		defer file.Close()
-		header := fmt.Sprintln("Product_ID" + "\t" + "Product_URL" + "\t" + "Youtube_Video_URLs")
+
+		header := fmt.Sprint("Product_ID" + "\t" + "Product_URL" + "\t" + "Youtube_Video_URLs")
 		file.WriteString(fmt.Sprintf("%s\n", header))
 		file.WriteString(fmt.Sprintf("%s\n", record))
 		return
+
 	}
 	defer f.Close()
-	fmt.Println("File exists Already.")
+	fmt.Println("File exists Already. Adding the data.")
 	f.WriteString(fmt.Sprintf("%s\n", record))
 }
 
@@ -131,12 +133,13 @@ func check(err error){
 // pwd returns the current working directory through which the binary is invoked.
 // used to save the csv file.
 func pwd() string {
-    pwd, err := os.Getwd()
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
-    return pwd 
+	
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return pwd
 }
 
 //========================================================================================
@@ -173,7 +176,7 @@ func main() {
 	check(err)
 
 	pLinks := getVideoLinks(buf)
-	record := fmt.Sprintln(pId + "\t" + pUrl + "\t" + pLinks)
+	record := fmt.Sprint(pId + "\t" + pUrl + "\t" + pLinks)
 	filePath :=  pwd() + "/TokoProductDetails.csv"
 	WriteToFile(filePath, record)
 }
