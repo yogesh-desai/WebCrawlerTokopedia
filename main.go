@@ -1,3 +1,17 @@
+//================================================================================
+/*This code is a crawler and scrapper program.
+It crawls the given domain and extract the required data from the web pages.
+Currently, it is defines to extract very specific requirements	such as 
+
+	1. Product-ID
+	2. Product-URL
+	3. Product-video URLs 
+It writes the information in a TSV (Tab Sepearated File) file.
+It keeps track of web pages it visited by writting it to a file.
+
+*/
+//================================================================================
+
 package main
 
 import (
@@ -20,6 +34,8 @@ import (
 	cdpr "github.com/knq/chromedp/runner"
 	
 )
+//================================================================================
+//================================================================================
 
 var (
 	baseurl, productFile, urlFile string
@@ -30,25 +46,13 @@ var (
 	seed        = flag.String("seed", "https://www.tokopedia.com/", "seed URL")
 	cancelAfter = flag.Duration("cancelafter", 0, "automatically cancel the fetchbot after a given time")
 	cancelAtURL = flag.String("cancelat", "", "automatically cancel the fetchbot at a given URL")
-	stopAfter   = flag.Duration("stopafter", 1 * time.Minute, "automatically stop the fetchbot after a given time")
+	stopAfter   = flag.Duration("stopafter", 0, "automatically stop the fetchbot after a given time")
 	stopAtURL   = flag.String("stopat", "", "automatically stop the fetchbot at a given URL")
 	memStats    = flag.Duration("memstats", 5 * time.Minute, "display memory statistics at a given interval")
 
 )
-
-// DoExtract runs the extractor and get the required data from the given webpage.
-func DoExtract(url string){
-
-	time.Sleep(2 * time.Millisecond)
-
-		wg.Add(1)
-		go func(){
-
-			defer wg.Done()
-			DoCDP(url)
-		}()
-		wg.Wait();
-}
+//================================================================================
+//================================================================================
 
 // main runs the fetcher and different go routines.
 func main() {
@@ -116,61 +120,21 @@ func main() {
 	outFileDetails()
 	log.Println(strings.Repeat("=", 72) + "\n") 
 }
+//================================================================================
+//================================================================================
 
-// outFileDetails logs the crawler and fetcher details.
-func outFileDetails() {
+// DoExtract runs the extractor and get the required data from the given webpage.
+func DoExtract(url string){
 
-	log.Println("Total no. of URLs processed: ", len(urls))
-	
-	if _, err := os.Stat(productFile); !os.IsNotExist(err) {
-		log.Println("The output TSV file location: ", productFile)
-	} else {
-		log.Println("Required data is not present in any of the URLs in the crawled Domain.")
-	}
+	time.Sleep(2 * time.Millisecond)
 
-	filePath := WriteProcessedUrlsToFile(urls)
+		wg.Add(1)
+		go func(){
 
-	// Write the processed URLs to a file
-	if _, err := os.Stat(urlFile); !os.IsNotExist(err){
-		log.Println("The Processed URLs are in the file: ", filePath)
-	} else {
-		log.Println("Processed URLs fle doesn't exits.")
-	}
-}
-
-// runMemStats calls go routines to print the Memory stats.
-func runMemStats(tick time.Duration) {
-
-	var mu sync.Mutex
-	go func() {
-
-		c := time.Tick(tick)
-
-		for _ = range c {
-
-			mu.Lock()
-			printMemStats()
-			mu.Unlock()
-		}
-	}()
-}
-
-// printMemStats logs the Memory stats
-func printMemStats() {
-
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
-	buf := bytes.NewBuffer(nil)
-	
-	buf.WriteString(strings.Repeat("=", 72) + "\n") 
-	buf.WriteString("Memory Profile:\n")
-	buf.WriteString(fmt.Sprintf("\tAlloc: %d Kb\n", mem.Alloc/1024))
-	buf.WriteString(fmt.Sprintf("\tTotalAlloc: %d Kb\n", mem.TotalAlloc/1024))
-	buf.WriteString(fmt.Sprintf("\tNumGC: %d\n", mem.NumGC))
-	buf.WriteString(fmt.Sprintf("\tGoroutines: %d\n", runtime.NumGoroutine()))
-	buf.WriteString(strings.Repeat("=", 72))
-
-	log.Println(buf.String())
+			defer wg.Done()
+			DoCDP(url)
+		}()
+		wg.Wait();
 }
 
 // processURL checks the url is already visited or not.
@@ -237,140 +201,6 @@ func exploreURL(url string, urlProcessor chan string) {
 }
 //================================================================================
 //================================================================================
-// getProductInfo extract the required information by using chromedp package
-func getProductInfo(urlstr, sel string, res *[]byte, pId, pUrl, url *string) cdp.Tasks {
-	return cdp.Tasks{
-		cdp.Navigate(urlstr),
-		cdp.Sleep(5 * time.Second),
-		cdp.WaitVisible(sel, cdp.ByID),
-		cdp.EvaluateAsDevTools("document.getElementById('product-id').value;", pId),
-		cdp.EvaluateAsDevTools("document.getElementById('product-url').value;", pUrl),
-		cdp.EvaluateAsDevTools("document.getElementById('webyclip-widget-3').contentWindow.document.body.outerHTML;", res),
-	}
-}
-
-// isPresent checks the existance of webyclip-widget-3 element.
-func isPresent(url string, res *[]byte) cdp.Tasks {
-
-	return cdp.Tasks{
-		cdp.Navigate(url),
-		cdp.Sleep(15 * time.Second),
-//		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').childElementCount;", res),
-		cdp.EvaluateAsDevTools("if (document.getElementById('webyclip-thumbnails')) {document.getElementById('webyclip-thumbnails').childElementCount;} else {console.log('0')}", res),
-	}
-
-}
-
-//================================================================================
-// getVideoLinks returns the Youtube viedo links present in the iframe webyclip-widget-3.
-// returns all the links which are comma seperated.
-func getVideoLinks(buf []byte) string {
-
-	var videoLinks string
-
-	//Convert byte buffer to String
-	innerDoc	:= string(buf[:])
-	tmp		:= strings.TrimSpace(innerDoc)
-
-	//Find the videolinks and create one final string
-	tmpStr		:= strings.Fields(tmp)
-	matchStr	:= "i.ytimg.com/vi/"
-	yUrl		:= "https://www.youtube.com/watch?v="
-
-	for _, v := range tmpStr {
-
-		//log.Println("Contains: ", strings.Contains(v, "i.ytimg.com"))
-		if strings.Contains(v, matchStr) {
-
-			vv := strings.TrimPrefix(v, "src=\\\"//i.ytimg.com/vi/")
-			id := strings.Split(vv, "/")
-
-			//log.Println("https://www.youtube.com/watch?v=" + id[0])
-			//log.Println("id: \tlen:\n",len(id), id)
-
-			youtubeLink := yUrl + id[0]
-			videoLinks += youtubeLink + ","
-		}
-
-	}
-
-	// return the video links
-	return videoLinks[:len(videoLinks)-1]
-}
-
-//========================================================================================
-func WriteToFile(filePath, record string) {
-
-	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		//                log.Println("File open failed for writing failure counts")
-		//                return
-		log.Println("File doesn't exists. File will be created with the headers before adding data.")
-		// If file does not exists then create it with the header and write records.
-		file, err1 := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if err1 != nil {
-			log.Println("File Open operation failed.")
-			return
-		}
-		defer file.Close()
-
-		header := fmt.Sprint("Product_ID" + "\t" + "Product_URL" + "\t" + "Youtube_Video_URLs")
-		file.WriteString(fmt.Sprintf("%s\n", header))
-		file.WriteString(fmt.Sprintf("%s\n", record))
-		return
-
-	}
-	defer f.Close()
-
-	log.Println("File exists Already. Adding the data for url.")
-	f.WriteString(fmt.Sprintf("%s\n", record))
-}
-
-// getDomain return only domain name by triming non required contents.
-func getDomain() string {
-
-	tmp		:= strings.TrimPrefix(baseurl, "https://www.")
-	domain		:= strings.Split(tmp, ".")[0]
-
-return domain
-
-}
-//================================================================================
-
-// WriteProcessedUrlsToFile writes the processed URLs to the file.
-func WriteProcessedUrlsToFile(urls []string) string{
-
-	domain		:= getDomain()
-	filePath	:= pwd() + "/" + domain + "-ProcessedURLs.csv"
-	urlFile = filePath
-	
-	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	check(err, "Error in file Open operation")
-	defer f.Close()
-
-	for _, url := range urls {
-		
-		f.WriteString(fmt.Sprintf("%s\n", url))
-	}
-	return filePath
-}
-
-//================================================================================
-// check checks the error, panics if not nil
-func check(err error, str string){
-
-        if err != nil { log.Fatalln(err, str) }
-}
-
-// pwd returns the current working directory through which the binary is invoked.
-// used to save the csv file.
-func pwd() string {
-	
-	pwd, err := os.Getwd()
-	check(err, "Error in getting current workig dir.")
-	return pwd
-}
-//================================================================================
 
 // DoCDP extract all the required information from the given URL.
 // It uses chromedp package to complete all the tasks.
@@ -434,4 +264,195 @@ func DoCDP(url string) {
 		productFile = filePath
 		WriteToFile(filePath, record)
 	}
+}
+
+//================================================================================
+// getProductInfo extract the required information by using chromedp package
+func getProductInfo(urlstr, sel string, res *[]byte, pId, pUrl, url *string) cdp.Tasks {
+	return cdp.Tasks{
+		cdp.Navigate(urlstr),
+		cdp.Sleep(5 * time.Second),
+		cdp.WaitVisible(sel, cdp.ByID),
+		cdp.EvaluateAsDevTools("document.getElementById('product-id').value;", pId),
+		cdp.EvaluateAsDevTools("document.getElementById('product-url').value;", pUrl),
+		cdp.EvaluateAsDevTools("document.getElementById('webyclip-widget-3').contentWindow.document.body.outerHTML;", res),
+	}
+}
+
+// isPresent checks the existance of webyclip-widget-3 element.
+func isPresent(url string, res *[]byte) cdp.Tasks {
+
+	return cdp.Tasks{
+		cdp.Navigate(url),
+		cdp.Sleep(15 * time.Second),
+//		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').childElementCount;", res),
+		cdp.EvaluateAsDevTools("if (document.getElementById('webyclip-thumbnails')) {document.getElementById('webyclip-thumbnails').childElementCount;} else {console.log('0')}", res),
+	}
+
+}
+
+//================================================================================
+// getVideoLinks returns the Youtube viedo links present in the iframe webyclip-widget-3.
+// returns all the links which are comma seperated.
+func getVideoLinks(buf []byte) string {
+
+	var videoLinks string
+
+	//Convert byte buffer to String
+	innerDoc	:= string(buf[:])
+	tmp		:= strings.TrimSpace(innerDoc)
+
+	//Find the videolinks and create one final string
+	tmpStr		:= strings.Fields(tmp)
+	matchStr	:= "i.ytimg.com/vi/"
+	yUrl		:= "https://www.youtube.com/watch?v="
+
+	for _, v := range tmpStr {
+
+		//log.Println("Contains: ", strings.Contains(v, "i.ytimg.com"))
+		if strings.Contains(v, matchStr) {
+
+			vv := strings.TrimPrefix(v, "src=\\\"//i.ytimg.com/vi/")
+			id := strings.Split(vv, "/")
+
+			//log.Println("https://www.youtube.com/watch?v=" + id[0])
+			//log.Println("id: \tlen:\n",len(id), id)
+
+			youtubeLink := yUrl + id[0]
+			videoLinks += youtubeLink + ","
+		}
+
+	}
+
+	// return the video links
+	return videoLinks[:len(videoLinks)-1]
+}
+
+//========================================================================================
+// outFileDetails logs the crawler and fetcher details.
+func outFileDetails() {
+
+	log.Println("Total no. of URLs processed: ", len(urls))
+	
+	if _, err := os.Stat(productFile); !os.IsNotExist(err) {
+		log.Println("The output TSV file location: ", productFile)
+	} else {
+		log.Println("Required data is not present in any of the URLs in the crawled Domain.")
+	}
+
+	filePath := WriteProcessedUrlsToFile(urls)
+
+	// Write the processed URLs to a file
+	if _, err := os.Stat(urlFile); !os.IsNotExist(err){
+		log.Println("The Processed URLs are in the file: ", filePath)
+	} else {
+		log.Println("Processed URLs fle doesn't exits.")
+	}
+}
+
+// runMemStats calls go routines to print the Memory stats.
+func runMemStats(tick time.Duration) {
+
+	var mu sync.Mutex
+	go func() {
+
+		c := time.Tick(tick)
+
+		for _ = range c {
+
+			mu.Lock()
+			printMemStats()
+			mu.Unlock()
+		}
+	}()
+}
+
+// printMemStats logs the Memory stats
+func printMemStats() {
+
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	buf := bytes.NewBuffer(nil)
+	
+	buf.WriteString(strings.Repeat("=", 72) + "\n") 
+	buf.WriteString("Memory Profile:\n")
+	buf.WriteString(fmt.Sprintf("\tAlloc: %d Kb\n", mem.Alloc/1024))
+	buf.WriteString(fmt.Sprintf("\tTotalAlloc: %d Kb\n", mem.TotalAlloc/1024))
+	buf.WriteString(fmt.Sprintf("\tNumGC: %d\n", mem.NumGC))
+	buf.WriteString(fmt.Sprintf("\tGoroutines: %d\n", runtime.NumGoroutine()))
+	buf.WriteString(strings.Repeat("=", 72))
+
+	log.Println(buf.String())
+}
+//================================================================================
+// WriteToFile writes the required info to the file.
+func WriteToFile(filePath, record string) {
+
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		//                log.Println("File open failed for writing failure counts")
+		//                return
+		log.Println("File doesn't exists. File will be created with the headers before adding data.")
+		// If file does not exists then create it with the header and write records.
+		file, err1 := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if err1 != nil {
+			log.Println("File Open operation failed.")
+			return
+		}
+		defer file.Close()
+
+		header := fmt.Sprint("Product_ID" + "\t" + "Product_URL" + "\t" + "Youtube_Video_URLs")
+		file.WriteString(fmt.Sprintf("%s\n", header))
+		file.WriteString(fmt.Sprintf("%s\n", record))
+		return
+
+	}
+	defer f.Close()
+
+	log.Println("File exists Already. Adding the data for url.")
+	f.WriteString(fmt.Sprintf("%s\n", record))
+}
+
+// WriteProcessedUrlsToFile writes the processed URLs to the file.
+func WriteProcessedUrlsToFile(urls []string) string{
+
+	domain		:= getDomain()
+	filePath	:= pwd() + "/" + domain + "-ProcessedURLs.csv"
+	urlFile = filePath
+	
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	check(err, "Error in file Open operation")
+	defer f.Close()
+
+	for _, url := range urls {
+		
+		f.WriteString(fmt.Sprintf("%s\n", url))
+	}
+	return filePath
+}
+
+//================================================================================
+// check checks the error, panics if not nil
+func check(err error, str string){
+
+        if err != nil { log.Fatalln(err, str) }
+}
+
+// pwd returns the current working directory through which the binary is invoked.
+// used to save the csv file.
+func pwd() string {
+	
+	pwd, err := os.Getwd()
+	check(err, "Error in getting current workig dir.")
+	return pwd
+
+}
+
+// getDomain return only domain name by triming non required contents.
+func getDomain() string {
+
+	tmp		:= strings.TrimPrefix(baseurl, "https://www.")
+	domain		:= strings.Split(tmp, ".")[0]
+	return domain
+
 }
