@@ -58,6 +58,7 @@ var (
 // main runs the fetcher and different go routines.
 func main() {
 
+	start := time.Now()
 	flag.Parse()
 
 	u, err := url.Parse(*seed)
@@ -119,7 +120,11 @@ func main() {
 
 	// Print the product and URLs file details.
 	outFileDetails()
-	log.Println(strings.Repeat("=", 72) + "\n") 
+	log.Println(strings.Repeat("=", 72) + "\n")
+
+	elapsed := time.Since(start)
+	log.Printf("Time required to complete: %s\n", elapsed)
+
 }
 //================================================================================
 //================================================================================
