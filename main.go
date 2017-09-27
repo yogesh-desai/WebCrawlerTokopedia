@@ -1,11 +1,12 @@
 //================================================================================
 /*This code is a crawler and scrapper program.
 It crawls the given domain and extract the required data from the web pages.
-Currently, it is defines to extract very specific requirements	such as 
+Currently, it is defined to extract very specific requirements	such as 
 
 	1. Product-ID
 	2. Product-URL
 	3. Product-video URLs 
+
 It writes the information in a TSV (Tab Sepearated File) file.
 It keeps track of web pages it visited by writting it to a file.
 
@@ -189,7 +190,7 @@ func exploreURL(url string, urlProcessor chan string) {
 				for _, a := range t.Attr {
 					if a.Key == "href" {
 
-						// if link is within jeremywho.com
+						// if link is within baseurl
 						if strings.HasPrefix(a.Val, baseurl) {
 							urlProcessor <- a.Val
 						}
