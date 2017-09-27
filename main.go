@@ -15,16 +15,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-//	"github.com/PuerkitoBio/fetchbot"
-//	"github.com/PuerkitoBio/goquery"
 	
 	cdp "github.com/knq/chromedp"
 	cdpr "github.com/knq/chromedp/runner"
 	
 )
-
-
 
 var (
 	baseurl, productFile, urlFile string
@@ -40,43 +35,22 @@ var (
 	memStats    = flag.Duration("memstats", 5 * time.Minute, "display memory statistics at a given interval")
 
 )
-/*
-func DoExtract(chanURL chan string){
 
-	time.Sleep(2 * time.Millisecond)
-	for{
-
-		wg.Add(1)
-		go func(){
-			// Enqueue the url in chanURL
-			//chanURL <- ctx.Cmd.URL().String()
-			defer wg.Done()
-			url := <- chanURL
-			DoCDP(url)
-		}()
-		wg.Wait();
-	}
-
-}*/
+// DoExtract runs the extractor and get the required data from the given webpage.
 func DoExtract(url string){
 
 	time.Sleep(2 * time.Millisecond)
-//	for{
 
 		wg.Add(1)
 		go func(){
-			// Enqueue the url in chanURL
-			//chanURL <- ctx.Cmd.URL().String()
+
 			defer wg.Done()
-//			url := <- chanURL
 			DoCDP(url)
 		}()
 		wg.Wait();
-//	}
-
 }
 
-
+// main runs the fetcher and different go routines.
 func main() {
 
 	flag.Parse()
@@ -86,21 +60,25 @@ func main() {
 	log.Println("The URL: ", u)
 
 	baseurl = u.String()
-	urlProcessor := make(chan string)
-	done := make(chan bool)
+	urlProcessor	:= make(chan string)
+	done		:= make(chan bool)
 
 	go processURL(urlProcessor, done)
-//	go DoExtract(urlProcessor)
-	urlProcessor <- u.String() //fmt.Sprint(u) //"https://jeremywho.com"
+
+	urlProcessor <- u.String()
 
 	// First mem stat print must be right after creating the fetchbot
 	if *memStats > 0 {
+
 		// Print starting stats
 		printMemStats()
+
 		// Run at regular intervals
 		runMemStats(*memStats)
+
 		// On exit, print ending stats after a GC
 		defer func() {
+
 			runtime.GC()
 			printMemStats()
 		}()
@@ -109,17 +87,22 @@ func main() {
 	// if a stop or cancel is requested after some duration, launch the goroutine
 	// that will stop or cancel.
 	if *stopAfter > 0 || *cancelAfter > 0 {
-		after := *stopAfter
-		stopFunc := true
+
+		after		:= *stopAfter
+		stopFunc	:= true
+
 		if *cancelAfter != 0 {
-			after = *cancelAfter
-			stopFunc = true
+
+			after		= *cancelAfter
+			stopFunc	= true
 		}
 
 		go func() {
+
 			c := time.After(after)
 			<-c
-			log.Println("The given timeout has occured. Exiting...")
+
+			log.Println("The given timeout has occured. Exiting the program...")
 			done <- stopFunc
 		}()
 	}
@@ -134,33 +117,37 @@ func main() {
 	log.Println(strings.Repeat("=", 72) + "\n") 
 }
 
+// outFileDetails logs the crawler and fetcher details.
 func outFileDetails() {
 
 	log.Println("Total no. of URLs processed: ", len(urls))
 	
 	if _, err := os.Stat(productFile); !os.IsNotExist(err) {
-
 		log.Println("The output TSV file location: ", productFile)
-		
 	} else {
 		log.Println("Required data is not present in any of the URLs in the crawled Domain.")
 	}
 
 	filePath := WriteProcessedUrlsToFile(urls)
+
 	// Write the processed URLs to a file
 	if _, err := os.Stat(urlFile); !os.IsNotExist(err){
-
 		log.Println("The Processed URLs are in the file: ", filePath)
 	} else {
 		log.Println("Processed URLs fle doesn't exits.")
 	}
 }
 
+// runMemStats calls go routines to print the Memory stats.
 func runMemStats(tick time.Duration) {
+
 	var mu sync.Mutex
 	go func() {
+
 		c := time.Tick(tick)
+
 		for _ = range c {
+
 			mu.Lock()
 			printMemStats()
 			mu.Unlock()
@@ -168,6 +155,7 @@ func runMemStats(tick time.Duration) {
 	}()
 }
 
+// printMemStats logs the Memory stats
 func printMemStats() {
 
 	var mem runtime.MemStats
@@ -186,8 +174,9 @@ func printMemStats() {
 }
 
 // processURL checks the url is already visited or not.
-//If not visited already, then set map = true and explore page for more links.
+// If not visited already, then set map = true and explore page for more links.
 func processURL(urlProcessor chan string, done chan bool) {
+
 	visited := make(map[string]bool)
 	for {
 		select {
@@ -200,6 +189,7 @@ func processURL(urlProcessor chan string, done chan bool) {
 				go exploreURL(url, urlProcessor)
 				DoExtract(url)
 			}
+
 		case <-time.After(15 * time.Second):
 			log.Printf("Explored %d pages\n", len(visited))
 			done <- true
@@ -210,6 +200,7 @@ func processURL(urlProcessor chan string, done chan bool) {
 
 // exploreURL does HTTP GET and tokenize the response
 func exploreURL(url string, urlProcessor chan string) {
+
 	log.Printf("Visiting %s.\n", url)
 
 	resp, err := http.Get(url)
@@ -244,8 +235,6 @@ func exploreURL(url string, urlProcessor chan string) {
 		}
 	}
 }
-
-
 //================================================================================
 //================================================================================
 // getProductInfo extract the required information by using chromedp package
@@ -337,6 +326,7 @@ func WriteToFile(filePath, record string) {
 	f.WriteString(fmt.Sprintf("%s\n", record))
 }
 
+// getDomain return only domain name by triming non required contents.
 func getDomain() string {
 
 	tmp		:= strings.TrimPrefix(baseurl, "https://www.")
@@ -347,6 +337,7 @@ return domain
 }
 //================================================================================
 
+// WriteProcessedUrlsToFile writes the processed URLs to the file.
 func WriteProcessedUrlsToFile(urls []string) string{
 
 	domain		:= getDomain()
@@ -360,7 +351,6 @@ func WriteProcessedUrlsToFile(urls []string) string{
 	for _, url := range urls {
 		
 		f.WriteString(fmt.Sprintf("%s\n", url))
-		
 	}
 	return filePath
 }
@@ -382,6 +372,8 @@ func pwd() string {
 }
 //================================================================================
 
+// DoCDP extract all the required information from the given URL.
+// It uses chromedp package to complete all the tasks.
 func DoCDP(url string) {
 	
 	// create context
@@ -389,11 +381,12 @@ func DoCDP(url string) {
 	defer cancel()
 
 	// create chrome instance
-//	c, err := cdp.New(ctxt, cdp.WithLog(log.Printf), cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
+	//c, err := cdp.New(ctxt, cdp.WithLog(log.Printf), cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
+	// create chrome instance with cmd line options disable-web-security & headless.
+	// Somehow headless option is currently not working.
+	//c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1"), cdpr.Flag("headless", "1")))
 
-	// create chrome instance with cmd line options disable-web-security & headless
-	//	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1"), cdpr.Flag("headless", "1")))
-		c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
+	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
 	check(err, "Error in creating new cdp instance")
 	
 	// run task list
@@ -418,11 +411,9 @@ func DoCDP(url string) {
 		check(err, "Error in wait to shutdown chrome")
 		
 		return
-		//os.Exit(0)
 
 	} else { 
 	
-	//fmt.Println("In ELSE The status is: \t Len: ", len(buf), "\t", string(buf), " \t", buf)
 	// Exit the code if "webyclip-widget-3" is not present.
 		err = c.Run(ctxt, getProductInfo(url, `#webyclip-widget-3`, &buf, &pId, &pUrl, &url))
 		check(err, "Error in Run method of cdp")
