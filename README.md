@@ -1,4 +1,4 @@
-# WebCrawlerTokopedia
+# WebCrawlerTokopedia [![Build Status](https://travis-ci.org/yogesh-desai/WebCrawlerTokopedia.svg)](https://travis-ci.org/yogesh-desai/WebCrawlerTokopedia)
 It is a web crawler and scrapper for https://www.Tokopedia.com. It is fully automated code where you just need to give input URL to get started.
 
 The program extract the following,
