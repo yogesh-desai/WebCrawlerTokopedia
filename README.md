@@ -47,7 +47,11 @@ Product_ID	Product_URL	Youtube_Video_URLs
 
 * Currently, it uses GUI mode of the Google-Chrome. Need to implement the `--headless` functionality.
 * Make the code more Faster and stable.
-* More Testing and profiling.
+* More Testing and profiling to understand Memory related issues.
+
+## Known Issues
+
+* Currently, this code works as expected for small websites; but consumes lot of memory and eventually gives error/ exits.
 
 
 Please feel free to generate pull requests or issues. :)
