@@ -51,7 +51,7 @@ Product_ID	Product_URL	Youtube_Video_URLs
 
 ## Known Issues
 
-* Currently, this code works as expected for small websites; but consumes lot of memory and eventually gives error/ exits.
+* Currently, this code works as expected for small websites; but for big websites it consumes lot of memory and eventually gives error/ exits. If you can fix the problem then feel free to do the same.
 
 
 Please feel free to generate pull requests or issues. :)
