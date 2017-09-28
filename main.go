@@ -41,13 +41,13 @@ import (
 var (
 	baseurl, productFile, urlFile string
 	wg sync.WaitGroup
-	urls []string
+//	urls []string
 
 	// Command-line flags
 	seed        = flag.String("seed", "https://www.tokopedia.com/", "seed URL")
 	cancelAfter = flag.Duration("cancelafter", 0, "automatically cancel the fetchbot after a given time")
 	cancelAtURL = flag.String("cancelat", "", "automatically cancel the fetchbot at a given URL")
-	stopAfter   = flag.Duration("stopafter", 0, "automatically stop the fetchbot after a given time")
+	stopAfter   = flag.Duration("stopafter", 15 * time.Minute, "automatically stop the fetchbot after a given time")
 	stopAtURL   = flag.String("stopat", "", "automatically stop the fetchbot at a given URL")
 	memStats    = flag.Duration("memstats", 5 * time.Minute, "display memory statistics at a given interval")
 
@@ -129,6 +129,7 @@ func main() {
 //================================================================================
 //================================================================================
 
+//func DoWriteURL
 // DoExtract runs the extractor and get the required data from the given webpage.
 func DoExtract(url string){
 
@@ -139,6 +140,7 @@ func DoExtract(url string){
 
 			defer wg.Done()
 			DoCDP(url)
+			runtime.GC()
 		}()
 		wg.Wait();
 }
@@ -155,9 +157,10 @@ func processURL(urlProcessor chan string, done chan bool) {
 				continue
 			} else {
 				visited[url] = true
-				urls = append(urls, url)
+				//urls = append(urls, url)
 				go exploreURL(url, urlProcessor)
 				DoExtract(url)
+				runtime.GC()
 			}
 
 		case <-time.After(15 * time.Second):
@@ -277,7 +280,7 @@ func DoCDP(url string) {
 func getProductInfo(urlstr, sel string, res *[]byte, pId, pUrl, url *string) cdp.Tasks {
 	return cdp.Tasks{
 		cdp.Navigate(urlstr),
-		cdp.Sleep(5 * time.Second),
+		cdp.Sleep(5 * time.Millisecond),
 		cdp.WaitVisible(sel, cdp.ByID),
 		cdp.EvaluateAsDevTools("document.getElementById('product-id').value;", pId),
 		cdp.EvaluateAsDevTools("document.getElementById('product-url').value;", pUrl),
@@ -338,7 +341,7 @@ func getVideoLinks(buf []byte) string {
 // outFileDetails logs the crawler and fetcher details.
 func outFileDetails() {
 
-	log.Println("Total no. of URLs processed: ", len(urls))
+//	log.Println("Total no. of URLs processed: ", len(urls))
 	
 	if _, err := os.Stat(productFile); !os.IsNotExist(err) {
 		log.Println("The output TSV file location: ", productFile)
@@ -346,14 +349,14 @@ func outFileDetails() {
 		log.Println("Required data is not present in any of the URLs in the crawled Domain.")
 	}
 
-	filePath := WriteProcessedUrlsToFile(urls)
+/*	filePath := WriteProcessedUrlsToFile(urls)
 
 	// Write the processed URLs to a file
 	if _, err := os.Stat(urlFile); !os.IsNotExist(err){
 		log.Println("The Processed URLs are in the file: ", filePath)
 	} else {
 		log.Println("Processed URLs fle doesn't exits.")
-	}
+	}*/
 }
 
 // runMemStats calls go routines to print the Memory stats.
