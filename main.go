@@ -47,7 +47,7 @@ var (
 	seed        = flag.String("seed", "https://www.tokopedia.com/", "seed URL")
 	cancelAfter = flag.Duration("cancelafter", 0, "automatically cancel the fetchbot after a given time")
 	cancelAtURL = flag.String("cancelat", "", "automatically cancel the fetchbot at a given URL")
-	stopAfter   = flag.Duration("stopafter", 15 * time.Minute, "automatically stop the fetchbot after a given time")
+	stopAfter   = flag.Duration("stopafter", 0, "automatically stop the fetchbot after a given time")
 	stopAtURL   = flag.String("stopat", "", "automatically stop the fetchbot at a given URL")
 	memStats    = flag.Duration("memstats", 5 * time.Minute, "display memory statistics at a given interval")
 
