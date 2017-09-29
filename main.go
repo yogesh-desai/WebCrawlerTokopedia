@@ -223,7 +223,10 @@ func DoCDP(url string) {
 	//c, err := cdp.New(ctxt, cdp.WithLog(log.Printf), cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
 	// create chrome instance with cmd line options disable-web-security & headless.
 	// Somehow headless option is currently not working.
-	//c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1"), cdpr.Flag("headless", "1")))
+
+	//c, err := cdp.New(ctxt, cdp.WithRunnerOptions(
+	//	cdpr.Flag("disable-web-security", "1"),
+	//	cdpr.Flag("headless", true)))
 
 	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
 	check(err, "Error in creating new cdp instance")
