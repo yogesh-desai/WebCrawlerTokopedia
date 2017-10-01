@@ -222,14 +222,20 @@ func DoCDP(url string) {
 	// create chrome instance
 	//c, err := cdp.New(ctxt, cdp.WithLog(log.Printf), cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
 	// create chrome instance with cmd line options disable-web-security & headless.
-	// Somehow headless option is currently not working.
+	// xSomehow headless option is currently not working.
 
-	//c, err := cdp.New(ctxt, cdp.WithRunnerOptions(
-	//	cdpr.Flag("disable-web-security", "1"),
-	//	cdpr.Flag("headless", true)))
+	// path := getOS()
+	// c, err := cdp.New(ctxt, cdp.WithRunnerOptions(
+	// 	cdpr.Path(path),
+	// 	cdpr.Flag("headless", true),
+	// 	cdpr.Flag("disable-web-security", true),
+	// 	cdpr.Flag("no-first-run", true),
+	// 	cdpr.Flag("no-default-browser-check", true),
+	// 	cdpr.Flag("disable-gpu", true),
+	// ), cdp.WithLog(log.Printf))
 
-	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
-	check(err, "Error in creating new cdp instance")
+	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", true)))
+	check(err, "\nError in creating new cdp instance")
 	
 	// run task list
 	var buf, buf1 []byte
@@ -283,7 +289,7 @@ func DoCDP(url string) {
 func getProductInfo(urlstr, sel string, res *[]byte, pId, pUrl, url *string) cdp.Tasks {
 	return cdp.Tasks{
 		cdp.Navigate(urlstr),
-		cdp.Sleep(5 * time.Millisecond),
+		cdp.Sleep(15 * time.Second),
 		cdp.WaitVisible(sel, cdp.ByID),
 		cdp.EvaluateAsDevTools("document.getElementById('product-id').value;", pId),
 		cdp.EvaluateAsDevTools("document.getElementById('product-url').value;", pUrl),
@@ -467,4 +473,20 @@ func getDomain() string {
 	domain		:= strings.Split(tmp, ".")[0]
 	return domain
 
+}
+
+func getOS() string {
+
+	var path, os string
+	os = runtime.GOOS
+
+	switch{
+
+	case os == "linux":
+		path = "/usr/bin/google-chrome"
+
+	case os == "windows":
+		path = `C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`
+	}
+return path
 }
