@@ -41,16 +41,15 @@ import (
 var (
 	baseurl, productFile, urlFile string
 	wg sync.WaitGroup
-//	urls []string
 
 	// Command-line flags
-	seed        = flag.String("seed", "https://www.tokopedia.com/", "seed URL")
-	cancelAfter = flag.Duration("cancelafter", 0, "automatically cancel the fetchbot after a given time")
-	cancelAtURL = flag.String("cancelat", "", "automatically cancel the fetchbot at a given URL")
-	stopAfter   = flag.Duration("stopafter", 0, "automatically stop the fetchbot after a given time")
-	stopAtURL   = flag.String("stopat", "", "automatically stop the fetchbot at a given URL")
-	memStats    = flag.Duration("memstats", 5 * time.Minute, "display memory statistics at a given interval")
-
+	seed		= flag.String("seed", "https://www.tokopedia.com/", "seed URL")
+	cancelAfter	= flag.Duration("cancelafter", 0, "automatically cancel the fetchbot after a given time")
+	cancelAtURL	= flag.String("cancelat", "", "automatically cancel the fetchbot at a given URL")
+	stopAfter	= flag.Duration("stopafter", 0, "automatically stop the fetchbot after a given time")
+	stopAtURL	= flag.String("stopat", "", "automatically stop the fetchbot at a given URL")
+	memStats	= flag.Duration("memstats", 5 * time.Minute, "display memory statistics at a given interval")
+	headLess	= flag.Bool("headless", true, "Run the CDP in headless mode.")
 )
 //================================================================================
 //================================================================================
@@ -65,6 +64,9 @@ func main() {
 	check(err, "Error in parsing the seed url")
 	log.Println("The URL: ", u)
 
+	if (*headLess) {
+		log.Println("Headless mode is enabled. CDP will run in Headless mode.")
+	}
 	baseurl = u.String()
 	urlProcessor	:= make(chan string)
 	done		:= make(chan bool)
@@ -129,7 +131,6 @@ func main() {
 //================================================================================
 //================================================================================
 
-//func DoWriteURL
 // DoExtract runs the extractor and get the required data from the given webpage.
 func DoExtract(url string){
 
@@ -139,8 +140,16 @@ func DoExtract(url string){
 		go func(){
 
 			defer wg.Done()
-			DoCDP(url)
-			runtime.GC()
+			if *headLess {
+
+				//log.Println("In the headless if now")
+				DoCDPHeadless(url)
+				runtime.GC()
+			} else {
+			
+				DoCDP(url)
+				runtime.GC()
+			}
 		}()
 		wg.Wait();
 }
@@ -157,7 +166,7 @@ func processURL(urlProcessor chan string, done chan bool) {
 				continue
 			} else {
 				visited[url] = true
-				//urls = append(urls, url)
+
 				go exploreURL(url, urlProcessor)
 				DoExtract(url)
 				runtime.GC()
@@ -174,7 +183,7 @@ func processURL(urlProcessor chan string, done chan bool) {
 // exploreURL does HTTP GET and tokenize the response
 func exploreURL(url string, urlProcessor chan string) {
 
-	log.Printf("Visiting %s.\n", url)
+	log.Printf("\n\nVisiting %s.\n\n", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -200,7 +209,10 @@ func exploreURL(url string, urlProcessor chan string) {
 
 						// if link is within baseurl
 						if strings.HasPrefix(a.Val, baseurl) {
-							urlProcessor <- a.Val
+
+							// Filter unwanted URLs
+							urlProcessor <- filterURL(a.Val)
+							//urlProcessor <- a.Val
 						}
 					}
 				}
@@ -208,8 +220,90 @@ func exploreURL(url string, urlProcessor chan string) {
 		}
 	}
 }
+
+// filterURL filter out the unwanted URLs.
+// Currently baseUrl + level 2 is considered to avoid review and other unwanted sub-links.
+func filterURL(url string) string {
+	var fUrl string
+	urlArray := strings.Split(url, "/")
+
+	switch {
+	case len(urlArray) > 5:
+		
+		// Check for nil parts. Just to be sure.
+		if urlArray[3] != "" && urlArray[4] != "" {
+						
+			//fmt.Println("URL is: ", urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4])
+			fUrl = urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4]
+		}
+	default:
+		fUrl = url
+	}
+	
+return fUrl
+}
+
 //================================================================================
 //================================================================================
+
+// DoCDPHeadless extract all the required information from the given URL.
+// It uses chromedp package to complete all the tasks. It uses the headless mode.
+func DoCDPHeadless(url string){
+	// create context
+	ctxt, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// create chrome instance with cmd line options disable-web-security & headless.
+
+	path := getOS()
+	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(
+		cdpr.Headless(path, 9222),
+		cdpr.Flag("headless", true),
+		cdpr.Flag("disable-web-security", true),
+		cdpr.Flag("no-first-run", true),
+		cdpr.Flag("no-default-browser-check", true),
+		cdpr.Flag("disable-gpu", true),
+	)) //, cdp.WithLog(log.Printf))
+
+	check(err, "\nError in creating new cdp instance")
+	
+	// run task list
+	var buf, buf1 []byte
+	var pId, pUrl string
+	
+	// Check for the existence of the webyclip-widget-3 on the page
+	err = c.Run(ctxt, isPresent(url, &buf1))
+	if err != nil && strings.Contains(fmt.Sprint(err), "Uncaught"){
+		return
+	} else {
+
+		check(err, "Error in Run method of cdp")
+	}
+
+	if (len(buf1) == 0) || (bytes.EqualFold([]byte("0"), buf1)){
+
+		log.Println("No webyclip-widget-3 on page:\n ", url)
+
+		// shutdown chrome
+		err = c.Shutdown(ctxt)
+		check(err, "Error in shutting down chrome")
+		return
+
+	} else { 
+	
+		// Exit the code if "webyclip-widget-3" is not present.
+		err = c.Run(ctxt, getProductInfo(url, `#webyclip-widget-3`, &buf, &pId, &pUrl, &url))
+		check(err, "Error in Run method of cdp")
+
+		// shutdown chrome
+		err = c.Shutdown(ctxt)
+		check(err, "Error in shutting down chrome")
+	
+		pLinks		:= getVideoLinks(buf)
+		record		:= fmt.Sprint(pId + "\t" + pUrl + "\t" + pLinks)
+		WriteToFile(record)
+	}
+}
 
 // DoCDP extract all the required information from the given URL.
 // It uses chromedp package to complete all the tasks.
@@ -220,19 +314,7 @@ func DoCDP(url string) {
 	defer cancel()
 
 	// create chrome instance
-	//c, err := cdp.New(ctxt, cdp.WithLog(log.Printf), cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", "1")))
-	// create chrome instance with cmd line options disable-web-security & headless.
-	// xSomehow headless option is currently not working.
-
-	// path := getOS()
-	// c, err := cdp.New(ctxt, cdp.WithRunnerOptions(
-	// 	cdpr.Path(path),
-	// 	cdpr.Flag("headless", true),
-	// 	cdpr.Flag("disable-web-security", true),
-	// 	cdpr.Flag("no-first-run", true),
-	// 	cdpr.Flag("no-default-browser-check", true),
-	// 	cdpr.Flag("disable-gpu", true),
-	// ), cdp.WithLog(log.Printf))
+	//c, err := cdp.New(ctxt, cdp.WithLog(log.Printf), cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", true)))
 
 	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", true)))
 	check(err, "\nError in creating new cdp instance")
@@ -243,12 +325,18 @@ func DoCDP(url string) {
 	
 	// Check for the existence of the webyclip-widget-3 on the page
 	err = c.Run(ctxt, isPresent(url, &buf1))
-	check(err, "Error in Run method of cdp")
+	if err != nil && strings.Contains(fmt.Sprint(err), "Uncaught"){
+		return
+	} else {
 
+		check(err, "Error in Run method of cdp")
+	}
 
+	//log.Println("The buf1: \n", string(buf1), "\n\n Len(buf): ", len(buf1))
 	if (len(buf1) == 0) || (bytes.EqualFold([]byte("0"), buf1)){
 
 		log.Println("No webyclip-widget-3 on page:\n ", url)
+		//log.Println("The buf1: \n", string(buf1))
 
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
@@ -273,14 +361,12 @@ func DoCDP(url string) {
 		// wait for chrome to finish
 		err = c.Wait()
 		check(err, "Error in wait to shutdown chrome")
-		
+
+		//log.Println("\n\nlen(buf):\n\n", len(buf), "\n\nThe buf: ", string(buf))
+
 		pLinks		:= getVideoLinks(buf)
 		record		:= fmt.Sprint(pId + "\t" + pUrl + "\t" + pLinks)
-		domain		:= getDomain()
-		filePath	:= pwd() + "/" + domain + "-ProductDetails.csv"
-
-		productFile = filePath
-		WriteToFile(filePath, record)
+		WriteToFile(record)
 	}
 }
 
@@ -289,7 +375,7 @@ func DoCDP(url string) {
 func getProductInfo(urlstr, sel string, res *[]byte, pId, pUrl, url *string) cdp.Tasks {
 	return cdp.Tasks{
 		cdp.Navigate(urlstr),
-		cdp.Sleep(15 * time.Second),
+		//cdp.Sleep(20 * time.Second),
 		cdp.WaitVisible(sel, cdp.ByID),
 		cdp.EvaluateAsDevTools("document.getElementById('product-id').value;", pId),
 		cdp.EvaluateAsDevTools("document.getElementById('product-url').value;", pUrl),
@@ -297,14 +383,17 @@ func getProductInfo(urlstr, sel string, res *[]byte, pId, pUrl, url *string) cdp
 	}
 }
 
-// isPresent checks the existance of webyclip-widget-3 element.
+// isPresent checks the existence of webyclip-widget-3 element.
 func isPresent(url string, res *[]byte) cdp.Tasks {
 
 	return cdp.Tasks{
 		cdp.Navigate(url),
-		cdp.Sleep(15 * time.Second),
-//		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').childElementCount;", res),
-		cdp.EvaluateAsDevTools("if (document.getElementById('webyclip-thumbnails')) {document.getElementById('webyclip-thumbnails').childElementCount;} else {console.log('0')}", res),
+		cdp.Sleep(20 * time.Second),
+		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').innerHTML", res),
+
+//		cdp.EvaluateAsDevTools("if (document.getElementById('webyclip-thumbnails')) {document.getElementById('webyclip-thumbnails').childElementCount;} else {console.log('0')}", res),
+//		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').childElementCount", res),
+
 	}
 
 }
@@ -350,22 +439,11 @@ func getVideoLinks(buf []byte) string {
 // outFileDetails logs the crawler and fetcher details.
 func outFileDetails() {
 
-//	log.Println("Total no. of URLs processed: ", len(urls))
-	
 	if _, err := os.Stat(productFile); !os.IsNotExist(err) {
 		log.Println("The output TSV file location: ", productFile)
 	} else {
-		log.Println("Required data is not present in any of the URLs in the crawled Domain.")
+		log.Println("Required data is not present in any of the URLs of crawled Domain.")
 	}
-
-/*	filePath := WriteProcessedUrlsToFile(urls)
-
-	// Write the processed URLs to a file
-	if _, err := os.Stat(urlFile); !os.IsNotExist(err){
-		log.Println("The Processed URLs are in the file: ", filePath)
-	} else {
-		log.Println("Processed URLs fle doesn't exits.")
-	}*/
 }
 
 // runMemStats calls go routines to print the Memory stats.
@@ -404,12 +482,16 @@ func printMemStats() {
 }
 //================================================================================
 // WriteToFile writes the required info to the file.
-func WriteToFile(filePath, record string) {
+func WriteToFile(record string) {
 
+	domain		:= getDomain()
+	filePath	:= pwd() + "/" + domain + "-ProductDetails.csv"
+
+	productFile = filePath
+	
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		//                log.Println("File open failed for writing failure counts")
-		//                return
+
 		log.Println("File doesn't exists. File will be created with the headers before adding data.")
 		// If file does not exists then create it with the header and write records.
 		file, err1 := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -475,6 +557,7 @@ func getDomain() string {
 
 }
 
+// getOS get the OS information
 func getOS() string {
 
 	var path, os string
@@ -490,3 +573,4 @@ func getOS() string {
 	}
 return path
 }
+//================================================================================
