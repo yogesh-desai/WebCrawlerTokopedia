@@ -1,84 +1,81 @@
-[yogesh@YogeshHomeDeskTop WebCrawlerTokopedia]$ go run main.go https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10
-2017/09/29 21:24:59 The URL:  https://www.tokopedia.com/
-2017/09/29 21:24:59 Visiting https://www.tokopedia.com/.
-2017/09/29 21:24:59 ========================================================================
-Memory Profile:
-	Alloc: 464 Kb
-	TotalAlloc: 464 Kb
-	NumGC: 0
-	Goroutines: 5
-========================================================================
-  C-c C-csignal: interrupt
 [yogesh@YogeshHomeDeskTop WebCrawlerTokopedia]$ go run main.go -seed=https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10
-2017/09/29 21:25:24 The URL:  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10
-2017/09/29 21:25:24 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10.
-2017/09/29 21:25:24 ========================================================================
-Memory Profile:
-	Alloc: 496 Kb
-	TotalAlloc: 496 Kb
-	NumGC: 0
-	Goroutines: 8
-========================================================================
-2017/09/29 21:25:40 error: could not get frame 3412.11: context canceled
-2017/09/29 21:25:40 error: could not perform (attributeModified) operation on node 24 (wait node): context canceled
-2017/09/29 21:25:40 error: could not perform (attributeModified) operation on node 26 (wait node): context canceled
-2017/09/29 21:25:40 error: could not get frame 3412.11: context canceled
-2017/09/29 21:25:40 error: could not perform (attributeModified) operation on node 25 (wait node): context canceled
-2017/09/29 21:25:40 error: could not get frame 3412.11: context canceled
-2017/09/29 21:25:40 File doesn't exists. File will be created with the headers before adding data.
-2017/09/29 21:25:40 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review.
-2017/09/29 21:25:56 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review
-2017/09/29 21:25:56 error: could not perform (attributeModified) operation on node 24 (wait node): context canceled
-2017/09/29 21:25:56 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/talk.
-2017/09/29 21:26:11 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/talk
-2017/09/29 21:26:11 error: could not perform (attributeModified) operation on node 25 (wait node): context canceled
-2017/09/29 21:26:12 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=5.
-2017/09/29 21:26:27 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=5
-2017/09/29 21:26:27 error: could not perform (attributeModified) operation on node 24 (wait node): context canceled
-2017/09/29 21:26:27 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=4.
-2017/09/29 21:26:43 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=4
-2017/09/29 21:26:43 error: could not perform (attributeModified) operation on node 25 (wait node): context canceled
-2017/09/29 21:26:43 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=3.
-2017/09/29 21:26:59 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=3
-2017/09/29 21:26:59 error: could not perform (attributeModified) operation on node 25 (wait node): context canceled
-2017/09/29 21:26:59 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=2.
-2017/09/29 21:27:14 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=2
-2017/09/29 21:27:15 error: could not perform (attributeModified) operation on node 25 (wait node): context canceled
-2017/09/29 21:27:15 Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=1.
-2017/09/29 21:27:31 error: could not perform (attributeModified) operation on node 16 (wait node): timeout waiting for node `16`
-2017/09/29 21:27:31 No webyclip-widget-3 on page:
-  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10/review?rating=1
-2017/09/29 21:27:31 error: could not get frame 7659.8: context canceled
-2017/09/29 21:27:31 error: could not get frame 7659.7: context canceled
-2017/09/29 21:27:31 error: could not get frame 7659.7: context canceled
-2017/09/29 21:27:31 error: could not get frame 7659.8: context canceled
-2017/09/29 21:27:31 error: could not get frame 7659.8: context canceled
-2017/09/29 21:27:46 Explored 8 pages
-2017/09/29 21:27:46 ========================================================================
+2017/10/11 00:53:39 The URL:  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10
+2017/10/11 00:53:39 Headless mode is enabled. CDP will run in Headless mode.
+2017/10/11 00:53:39 
 
-2017/09/29 21:27:46 
+Visiting https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10.
+
+2017/10/11 00:53:39 ========================================================================
+Memory Profile:
+	Alloc: 465 Kb
+	TotalAlloc: 465 Kb
+	NumGC: 0
+	Goroutines: 4
+========================================================================
+2017/10/11 00:53:54 error: could not perform (attributeModified) operation on node 26 (wait node): timeout waiting for node `26`
+2017/10/11 00:53:54 error: could not perform (attributeModified) operation on node 25 (wait node): timeout waiting for node `25`
+2017/10/11 00:53:54 error: could not perform (attributeModified) operation on node 27 (wait node): timeout waiting for node `27`
+2017/10/11 00:53:54 error: could not get frame 16963.10: timeout waiting for frame `16963.10`
+2017/10/11 00:53:54 error: could not get frame 16963.10: timeout waiting for frame `16963.10`
+2017/10/11 00:53:54 error: could not perform (attributeModified) operation on node 29 (wait node): timeout waiting for node `29`
+2017/10/11 00:53:55 error: could not get frame 16963.10: timeout waiting for frame `16963.10`
+2017/10/11 00:53:59 File exists Already. Adding the data for url.
+2017/10/11 00:54:14 Explored 1 pages
+2017/10/11 00:54:14 ========================================================================
+
+2017/10/11 00:54:14 
 
 Completed Crawling & Scrapping the Domain:
  https://www.tokopedia.com/chocoapple/ready-stock-bnib-iphone-128gb-7-plus-jet-black-garansi-apple-1-tahun-10
-2017/09/29 21:27:46 The output TSV file location:  /home/yogesh/GoCodes/WebCrawler/WebCrawlerTokopedia/tokopedia-ProductDetails.csv
-2017/09/29 21:27:46 ========================================================================
+2017/10/11 00:54:14 The output TSV file location:  /home/yogesh/GoCodes/WebCrawler/WebCrawlerTokopedia/tokopedia-ProductDetails.csv
+2017/10/11 00:54:14 ========================================================================
 
-2017/09/29 21:27:46 Time required to complete: 2m22.113322259s
-2017/09/29 21:27:46 ========================================================================
+2017/10/11 00:54:14 Time required to complete: 35.396037409s
+2017/10/11 00:54:14 ========================================================================
 Memory Profile:
-	Alloc: 288555 Kb
-	TotalAlloc: 331310 Kb
-	NumGC: 21
-	Goroutines: 13
+	Alloc: 1434 Kb
+	TotalAlloc: 43707 Kb
+	NumGC: 6
+	Goroutines: 5
 ========================================================================
-[yogesh@YogeshHomeDeskTop WebCrawlerTokopedia]$ ls
-main.go  README.md  tokopedia-ProcessedURLs-old.csv  tokopedia-ProductDetails.csv
-[yogesh@YogeshHomeDeskTop WebCrawlerTokopedia]$ wc -l tokopedia-ProductDetails.csv 
-2 tokopedia-ProductDetails.csv
+[yogesh@YogeshHomeDeskTop WebCrawlerTokopedia]$ go run main.go -seed=https://www.tokopedia.com/rajaponsel88/lg-g5-ram-4-gb-jakarta-gojek-fullset-mulus?src=topads
+2017/10/11 00:54:28 The URL:  https://www.tokopedia.com/rajaponsel88/lg-g5-ram-4-gb-jakarta-gojek-fullset-mulus?src=topads
+2017/10/11 00:54:28 Headless mode is enabled. CDP will run in Headless mode.
+2017/10/11 00:54:28 
+
+Visiting https://www.tokopedia.com/rajaponsel88/lg-g5-ram-4-gb-jakarta-gojek-fullset-mulus?src=topads.
+
+2017/10/11 00:54:28 ========================================================================
+Memory Profile:
+	Alloc: 465 Kb
+	TotalAlloc: 465 Kb
+	NumGC: 0
+	Goroutines: 5
+========================================================================
+2017/10/11 00:54:43 error: could not perform (attributeModified) operation on node 24 (wait node): timeout waiting for node `24`
+2017/10/11 00:54:43 error: could not perform (attributeModified) operation on node 25 (wait node): timeout waiting for node `25`
+2017/10/11 00:54:43 error: could not perform (attributeModified) operation on node 26 (wait node): timeout waiting for node `26`
+2017/10/11 00:54:45 error: could not get frame 17082.8: timeout waiting for frame `17082.8`
+2017/10/11 00:54:45 error: could not get frame 17082.8: timeout waiting for frame `17082.8`
+2017/10/11 00:54:45 error: could not perform (attributeModified) operation on node 29 (wait node): timeout waiting for node `29`
+2017/10/11 00:54:45 error: could not get frame 17082.8: timeout waiting for frame `17082.8`
+2017/10/11 00:54:48 File exists Already. Adding the data for url.
+2017/10/11 00:55:03 Explored 1 pages
+2017/10/11 00:55:03 ========================================================================
+
+2017/10/11 00:55:03 
+
+Completed Crawling & Scrapping the Domain:
+ https://www.tokopedia.com/rajaponsel88/lg-g5-ram-4-gb-jakarta-gojek-fullset-mulus?src=topads
+2017/10/11 00:55:03 The output TSV file location:  /home/yogesh/GoCodes/WebCrawler/WebCrawlerTokopedia/tokopedia-ProductDetails.csv
+2017/10/11 00:55:03 ========================================================================
+
+2017/10/11 00:55:03 Time required to complete: 35.186692113s
+2017/10/11 00:55:03 ========================================================================
+Memory Profile:
+	Alloc: 37475 Kb
+	TotalAlloc: 43672 Kb
+	NumGC: 5
+	Goroutines: 6
+========================================================================
 [yogesh@YogeshHomeDeskTop WebCrawlerTokopedia]$ 
