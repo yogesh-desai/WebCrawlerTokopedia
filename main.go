@@ -134,8 +134,11 @@ func main() {
 // DoExtract runs the extractor and get the required data from the given webpage.
 func DoExtract(url string){
 
-	time.Sleep(2 * time.Millisecond)
-
+	ok, fUrl := filterURL(url)
+	fmt.Println("\n\nok: ", ok, "fUrl: ", fUrl )
+	if ok {
+		
+		time.Sleep(2 * time.Millisecond)
 		wg.Add(1)
 		go func(){
 
@@ -143,16 +146,86 @@ func DoExtract(url string){
 			if *headLess {
 
 				//log.Println("In the headless if now")
-				DoCDPHeadless(url)
+				DoCDPHeadless(fUrl)
 				runtime.GC()
 			} else {
 			
-				DoCDP(url)
+				DoCDP(fUrl)
 				runtime.GC()
 			}
 		}()
 		wg.Wait();
+	}
 }
+
+// filterURL filter out the unwanted URLs.
+// Currently baseUrl + level 2 is considered to avoid review and other unwanted sub-links.
+func filterURL(url string) (okay bool, fUrl string) {
+	//var fUrl string
+	urlArray := strings.Split(url, "/")
+
+	switch {
+/*	case len(urlArray) > 5:
+		// Check for nil parts. Just to be sure.
+		if urlArray[3] != "" && urlArray[4] != "" {
+			//fmt.Println("URL is: ", urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4])
+			fUrl = urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4]
+		}*/
+	case len(urlArray) != 5:
+		return
+	case len(urlArray) == 5:
+
+		tmpResp, err := http.Get(url)
+		if err != nil {
+			log.Println("ERROR in HTTP.GET method: ", err)
+			return
+		}
+
+		defer tmpResp.Body.Close()
+		zz := html.NewTokenizer(tmpResp.Body)
+
+		for {
+			tt := zz.Next()
+			switch {
+			case tt == html.ErrorToken:
+				return
+			case tt == html.StartTagToken:
+
+				t := zz.Token()
+				ok, tid := isProductID(t)
+
+				if !ok { continue }
+				if ok {
+					if len(tid) > 1 {
+						fUrl = url
+						okay = true
+					} // Set filtered URL
+				}
+			}
+		}
+	}
+	return
+}
+
+func isProductID(t html.Token) (ok bool, id string ){
+
+	if t.Data == "input" {
+		for _, a := range t.Attr{
+			// Check product ID is present or not
+			if (a.Key == "name") && (a.Val == "product_id" || a.Val == "product-id") {
+				for _,pid := range t.Attr{
+					if pid.Key == "value" {
+						id = pid.Val
+						ok = true
+
+					} //product id
+				}
+			}
+		}
+	}
+	return  //false, id, url
+}
+
 
 // processURL checks the url is already visited or not.
 // If not visited already, then set map = true and explore page for more links.
@@ -168,7 +241,7 @@ func processURL(urlProcessor chan string, done chan bool) {
 				visited[url] = true
 
 				go exploreURL(url, urlProcessor)
-				DoExtract(url)
+				//DoExtract(url)
 				runtime.GC()
 			}
 
@@ -187,7 +260,7 @@ func exploreURL(url string, urlProcessor chan string) {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Println(err)
+		log.Println("ERROR in HTTP.GET method: ", err)
 		return
 	}
 
@@ -196,13 +269,12 @@ func exploreURL(url string, urlProcessor chan string) {
 
 	for {
 		tt := z.Next()
-		if tt == html.ErrorToken {
+		switch {
+		case tt == html.ErrorToken:
 			return
-		}
 
-		if tt == html.StartTagToken {
+		case tt == html.StartTagToken:
 			t := z.Token()
-
 			if t.Data == "a" {
 				for _, a := range t.Attr {
 					if a.Key == "href" {
@@ -219,28 +291,6 @@ func exploreURL(url string, urlProcessor chan string) {
 			}
 		}
 	}
-}
-
-// filterURL filter out the unwanted URLs.
-// Currently baseUrl + level 2 is considered to avoid review and other unwanted sub-links.
-func filterURL(url string) string {
-	var fUrl string
-	urlArray := strings.Split(url, "/")
-
-	switch {
-	case len(urlArray) > 5:
-		
-		// Check for nil parts. Just to be sure.
-		if urlArray[3] != "" && urlArray[4] != "" {
-						
-			//fmt.Println("URL is: ", urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4])
-			fUrl = urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4]
-		}
-	default:
-		fUrl = url
-	}
-	
-return fUrl
 }
 
 //================================================================================
