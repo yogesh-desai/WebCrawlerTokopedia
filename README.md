@@ -19,13 +19,27 @@ It uses the `chromdp` package. You can check it [here](https://github.com/knq/ch
 ```
 $ go run main.go
 
+Usage of command-line-arguments:
+  -cancelafter duration
+    	automatically cancel the fetchbot after a given time
+  -cancelat string
+    	automatically cancel the fetchbot at a given URL
+  -headless
+    	Run the CDP in headless mode. (default true)
+  -memstats duration
+    	display memory statistics at a given interval (default 5m0s)
+  -seed string
+    	seed URL (default "https://www.tokopedia.com/")
+  -stopafter duration
+    	automatically stop the fetchbot after a given time
+  -stopat string
+    	automatically stop the fetchbot at a given URL
+
 ```
 
 ## Output
 
-The code generates two files.
-    1. File to store product details.
-    2. File to store visited URLs.
+The code generates a file to store product details.
 
 Following is the example of the code when ran for a single webpage.
 
@@ -38,10 +52,12 @@ Product_ID	Product_URL	Youtube_Video_URLs
 
 ## Features
 
-* It has fecther and extractor functions.
+* It has fetcher and extractor functions.
+* The fetcher is specifically designed with Filter function.
 * It uses goroutines and channels to make tasks parallel and faster.
 * It has Flags, with bydefault values. You can give your own values at runtime.
 * It also has the Memory Stats to keep track of memory being used by the program.
+
 
 ## TODOs
 
@@ -51,7 +67,7 @@ Product_ID	Product_URL	Youtube_Video_URLs
 
 ## Known Issues
 
-* Currently, this code works as expected for small websites; but for big websites it consumes lot of memory and eventually gives error/ exits. If you can fix the problem then feel free to do the same.
+* Currently, no issues. :) 
 
 
 Please feel free to generate pull requests or issues. :)
