@@ -44,10 +44,10 @@ var (
 
 	// Command-line flags
 	seed		= flag.String("seed", "https://www.tokopedia.com/", "Seed URL")
-	cancelAfter	= flag.Duration("cancelafter", 0, "Automatically cancel the fetchbot after a given time.")
-	cancelAtURL	= flag.String("cancelat", "", "Automatically cancel the fetchbot at a given URL.")
-	stopAfter	= flag.Duration("stopafter", 2 * time.Minute, "Automatically stop the fetchbot after a given time.")
-	stopAtURL	= flag.String("stopat", "", "Automatically stop the fetchbot at a given URL.")
+	cancelAfter	= flag.Duration("cancelafter", 0, "Automatically cancel the fetcher after a given time.")
+	cancelAtURL	= flag.String("cancelat", "", "Automatically cancel the fetcher at a given URL.")
+	stopAfter	= flag.Duration("stopafter", 0, "Automatically stop the fetcher after a given time.")
+	stopAtURL	= flag.String("stopat", "", "Automatically stop the fetcher at a given URL.")
 	memStats	= flag.Duration("memstats", 5 * time.Minute, "Display memory statistics at a given interval.")
 	headLess	= flag.Bool("headless", true, "Run the CDP in headless mode.")
 )
@@ -63,11 +63,12 @@ func main() {
 	u, err := url.Parse(*seed)
 	check(err, "Error in parsing the seed url")
 	log.Println("The URL: ", u)
+	baseurl = u.String()
 
 	if (*headLess) {
 		log.Println("Headless mode is enabled. CDP will run in Headless mode.")
 	}
-	baseurl = u.String()
+
 	urlProcessor	:= make(chan string)
 	done		:= make(chan bool)
 
@@ -118,7 +119,7 @@ func main() {
 	<-done
 	
 	log.Println(strings.Repeat("=", 72) + "\n")
-	log.Println("\n\nCompleted Crawling & Scrapping the Domain:\n", baseurl)
+	log.Println("\n\nCompleted Crawling & Scrapping the Domain:\n", u.String())
 
 	// Print the product and URLs file details.
 	outFileDetails()
@@ -131,13 +132,76 @@ func main() {
 //================================================================================
 //================================================================================
 
+// processURL checks the url is already visited or not.
+// If not visited already, then set map = true and explore page for more links.
+func processURL(urlProcessor chan string, done chan bool) {
+
+	visited := make(map[string]bool)
+	for {
+		select {
+		case url := <-urlProcessor:
+			if _, ok := visited[url]; ok {
+				continue
+			} else {
+				visited[url] = true
+
+				DoExtract(url)
+				go exploreURL(url, urlProcessor)
+				
+				runtime.GC()
+			}
+
+		case <-time.After(1 * time.Minute):
+			log.Printf("Explored %d pages\n", len(visited))
+			done <- true
+			
+		}
+	}
+}
+
+// exploreURL does HTTP GET and tokenize the response
+func exploreURL(url string, urlProcessor chan string) {
+
+	log.Println("Visiting URL: ", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println("ERROR in HTTP.GET method: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+	z := html.NewTokenizer(resp.Body)
+
+	for {
+		tt := z.Next()
+		switch {
+		case tt == html.ErrorToken:
+			return
+
+		case tt == html.StartTagToken:
+			t := z.Token()
+			if t.Data == "a" {
+				for _, a := range t.Attr {
+					if a.Key == "href" {
+						// if link is within baseurl
+						if strings.HasPrefix(a.Val, baseurl) {	urlProcessor <- a.Val }
+						//if strings.Contains(a.Val, baseurl) || strings.HasPrefix(a.Val, baseurl) {	urlProcessor <- a.Val }
+						//urlProcessor <- a.Val
+					}
+				}
+			}
+		}
+	}
+}
+//================================================================================
 // DoExtract runs the extractor and get the required data from the given webpage.
 func DoExtract(url string){
 
 	ok, fUrl := filterURL(url)
-	fmt.Println("\n\nok: ", ok, "fUrl: ", fUrl )
+	//fmt.Println("\nok: ", ok, "fUrl: ", fUrl )
 	if ok {
-		
+		fmt.Println("\nRunning ChromeDP for Url: ", fUrl, "\n")	
 		time.Sleep(2 * time.Millisecond)
 		wg.Add(1)
 		go func(){
@@ -159,18 +223,13 @@ func DoExtract(url string){
 }
 
 // filterURL filter out the unwanted URLs.
-// Currently baseUrl + level 2 is considered to avoid review and other unwanted sub-links.
+// Currently it allows only https://www.tokopedia.com/abc/xyz length.
+// Specifically designed to avoid unwanted URLs.
 func filterURL(url string) (okay bool, fUrl string) {
-	//var fUrl string
+
 	urlArray := strings.Split(url, "/")
 
 	switch {
-/*	case len(urlArray) > 5:
-		// Check for nil parts. Just to be sure.
-		if urlArray[3] != "" && urlArray[4] != "" {
-			//fmt.Println("URL is: ", urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4])
-			fUrl = urlArray[0] + "//" + urlArray[1] + urlArray[2] + "/" + urlArray[3] + "/" + urlArray[4]
-		}*/
 	case len(urlArray) != 5:
 		return
 	case len(urlArray) == 5:
@@ -207,13 +266,18 @@ func filterURL(url string) (okay bool, fUrl string) {
 	return
 }
 
+// isProductID is a helper function.
+// It checks productID is present in the DOM or not.
 func isProductID(t html.Token) (ok bool, id string ){
 
 	if t.Data == "input" {
 		for _, a := range t.Attr{
+
 			// Check product ID is present or not
 			if (a.Key == "name") && (a.Val == "product_id" || a.Val == "product-id") {
+
 				for _,pid := range t.Attr{
+
 					if pid.Key == "value" {
 						id = pid.Val
 						ok = true
@@ -225,77 +289,7 @@ func isProductID(t html.Token) (ok bool, id string ){
 	}
 	return  //false, id, url
 }
-
-
-// processURL checks the url is already visited or not.
-// If not visited already, then set map = true and explore page for more links.
-func processURL(urlProcessor chan string, done chan bool) {
-
-	visited := make(map[string]bool)
-	for {
-		select {
-		case url := <-urlProcessor:
-			if _, ok := visited[url]; ok {
-				continue
-			} else {
-				visited[url] = true
-
-				go exploreURL(url, urlProcessor)
-				//DoExtract(url)
-				runtime.GC()
-			}
-
-		case <-time.After(15 * time.Second):
-			log.Printf("Explored %d pages\n", len(visited))
-			done <- true
-			
-		}
-	}
-}
-
-// exploreURL does HTTP GET and tokenize the response
-func exploreURL(url string, urlProcessor chan string) {
-
-	log.Printf("\n\nVisiting %s.\n\n", url)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Println("ERROR in HTTP.GET method: ", err)
-		return
-	}
-
-	defer resp.Body.Close()
-	z := html.NewTokenizer(resp.Body)
-
-	for {
-		tt := z.Next()
-		switch {
-		case tt == html.ErrorToken:
-			return
-
-		case tt == html.StartTagToken:
-			t := z.Token()
-			if t.Data == "a" {
-				for _, a := range t.Attr {
-					if a.Key == "href" {
-
-						// if link is within baseurl
-						if strings.HasPrefix(a.Val, baseurl) {
-
-							// Filter unwanted URLs
-							//urlProcessor <- filterURL(a.Val)
-							urlProcessor <- a.Val
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
 //================================================================================
-//================================================================================
-
 // DoCDPHeadless extract all the required information from the given URL.
 // It uses chromedp package to complete all the tasks. It uses the headless mode.
 func DoCDPHeadless(url string){
@@ -304,7 +298,6 @@ func DoCDPHeadless(url string){
 	defer cancel()
 
 	// create chrome instance with cmd line options disable-web-security & headless.
-
 	path := getOS()
 	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(
 		cdpr.Headless(path, 9222),
@@ -313,8 +306,7 @@ func DoCDPHeadless(url string){
 		cdpr.Flag("no-first-run", true),
 		cdpr.Flag("no-default-browser-check", true),
 		cdpr.Flag("disable-gpu", true),
-	)) //, cdp.WithLog(log.Printf))
-
+	))//, cdp.WithLog(log.Printf))
 	check(err, "\nError in creating new cdp instance")
 	
 	// run task list
@@ -323,16 +315,16 @@ func DoCDPHeadless(url string){
 	
 	// Check for the existence of the webyclip-widget-3 on the page
 	err = c.Run(ctxt, isPresent(url, &buf1))
-	if err != nil && strings.Contains(fmt.Sprint(err), "Uncaught"){
+	if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
 		return
 	} else {
-
 		check(err, "Error in Run method of cdp")
 	}
 
-	if (len(buf1) == 0) || (bytes.EqualFold([]byte("0"), buf1)){
+	//log.Println("The buf1 string: \n", string(buf1), "\nbuf1 byte:", buf1, "\n Len(buf): ", len(buf1))
+	if (len(buf1) <= 2) || (bytes.EqualFold([]byte("," ), buf1)) {
 
-		log.Println("No webyclip-widget-3 on page:\n ", url)
+		log.Println("\nwebyclip-widget-3 is not present on page: ", url, "\n")
 
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
@@ -343,7 +335,11 @@ func DoCDPHeadless(url string){
 	
 		// Exit the code if "webyclip-widget-3" is not present.
 		err = c.Run(ctxt, getProductInfo(url, `#webyclip-widget-3`, &buf, &pId, &pUrl, &url))
-		check(err, "Error in Run method of cdp")
+		if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
+			return
+		} else {
+			check(err, "Error in Run method of cdp")
+		}
 
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
@@ -375,17 +371,16 @@ func DoCDP(url string) {
 	
 	// Check for the existence of the webyclip-widget-3 on the page
 	err = c.Run(ctxt, isPresent(url, &buf1))
-	if err != nil && strings.Contains(fmt.Sprint(err), "Uncaught"){
+	if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
 		return
 	} else {
-
 		check(err, "Error in Run method of cdp")
 	}
 
 	//log.Println("The buf1: \n", string(buf1), "\n\n Len(buf): ", len(buf1))
-	if (len(buf1) == 0) || (bytes.EqualFold([]byte("0"), buf1)){
+	if (len(buf1) <= 2) || (bytes.EqualFold([]byte(","), buf1)) {
 
-		log.Println("No webyclip-widget-3 on page:\n ", url)
+		log.Println("\nwebyclip-widget-3 is not present on page: ", url, "\n")
 		//log.Println("The buf1: \n", string(buf1))
 
 		// shutdown chrome
@@ -402,7 +397,11 @@ func DoCDP(url string) {
 	
 	// Exit the code if "webyclip-widget-3" is not present.
 		err = c.Run(ctxt, getProductInfo(url, `#webyclip-widget-3`, &buf, &pId, &pUrl, &url))
-		check(err, "Error in Run method of cdp")
+		if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
+			return
+		} else {
+			check(err, "Error in Run method of cdp")
+		}
 
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
@@ -440,14 +439,8 @@ func isPresent(url string, res *[]byte) cdp.Tasks {
 		cdp.Navigate(url),
 		cdp.Sleep(20 * time.Second),
 		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').innerHTML", res),
-
-//		cdp.EvaluateAsDevTools("if (document.getElementById('webyclip-thumbnails')) {document.getElementById('webyclip-thumbnails').childElementCount;} else {console.log('0')}", res),
-//		cdp.EvaluateAsDevTools("document.getElementById('webyclip-thumbnails').childElementCount", res),
-
 	}
-
 }
-
 //================================================================================
 // getVideoLinks returns the Youtube viedo links present in the iframe webyclip-widget-3.
 // returns all the links which are comma seperated.
@@ -478,7 +471,6 @@ func getVideoLinks(buf []byte) string {
 			youtubeLink := yUrl + id[0]
 			videoLinks += youtubeLink + ","
 		}
-
 	}
 
 	// return the video links
@@ -559,7 +551,7 @@ func WriteToFile(record string) {
 	}
 	defer f.Close()
 
-	log.Println("File exists Already. Adding the data for url.")
+	log.Println("\nFile exists Already. Appending the product details for the URL: .", strings.Split(record, "\t")[1])
 	f.WriteString(fmt.Sprintf("%s\n", record))
 }
 
@@ -595,7 +587,6 @@ func pwd() string {
 	pwd, err := os.Getwd()
 	check(err, "Error in getting current workig dir.")
 	return pwd
-
 }
 
 // getDomain return only domain name by triming non required contents.
