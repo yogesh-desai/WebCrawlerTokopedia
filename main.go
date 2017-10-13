@@ -117,7 +117,7 @@ func main() {
 	}
 
 	<-done
-	
+
 	log.Println(strings.Repeat("=", 72) + "\n")
 	log.Println("\n\nCompleted Crawling & Scrapping the Domain:\n", u.String())
 
@@ -127,7 +127,6 @@ func main() {
 
 	elapsed := time.Since(start)
 	log.Printf("Time required to complete: %s\n", elapsed)
-
 }
 //================================================================================
 //================================================================================
@@ -147,14 +146,12 @@ func processURL(urlProcessor chan string, done chan bool) {
 
 				DoExtract(url)
 				go exploreURL(url, urlProcessor)
-				
 				runtime.GC()
 			}
 
 		case <-time.After(1 * time.Minute):
 			log.Printf("Explored %d pages\n", len(visited))
 			done <- true
-			
 		}
 	}
 }
@@ -213,7 +210,7 @@ func DoExtract(url string){
 				DoCDPHeadless(fUrl)
 				runtime.GC()
 			} else {
-			
+
 				DoCDP(fUrl)
 				runtime.GC()
 			}
@@ -308,11 +305,11 @@ func DoCDPHeadless(url string){
 		cdpr.Flag("disable-gpu", true),
 	))//, cdp.WithLog(log.Printf))
 	check(err, "\nError in creating new cdp instance")
-	
+
 	// run task list
 	var buf, buf1 []byte
 	var pId, pUrl string
-	
+
 	// Check for the existence of the webyclip-widget-3 on the page
 	err = c.Run(ctxt, isPresent(url, &buf1))
 	if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
@@ -332,7 +329,7 @@ func DoCDPHeadless(url string){
 		return
 
 	} else { 
-	
+
 		// Exit the code if "webyclip-widget-3" is not present.
 		err = c.Run(ctxt, getProductInfo(url, `#webyclip-widget-3`, &buf, &pId, &pUrl, &url))
 		if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
@@ -344,7 +341,7 @@ func DoCDPHeadless(url string){
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
 		check(err, "Error in shutting down chrome")
-	
+
 		pLinks		:= getVideoLinks(buf)
 		record		:= fmt.Sprint(pId + "\t" + pUrl + "\t" + pLinks)
 		WriteToFile(record)
@@ -354,7 +351,7 @@ func DoCDPHeadless(url string){
 // DoCDP extract all the required information from the given URL.
 // It uses chromedp package to complete all the tasks.
 func DoCDP(url string) {
-	
+
 	// create context
 	ctxt, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -364,11 +361,11 @@ func DoCDP(url string) {
 
 	c, err := cdp.New(ctxt, cdp.WithRunnerOptions(cdpr.Flag("disable-web-security", true)))
 	check(err, "\nError in creating new cdp instance")
-	
+
 	// run task list
 	var buf, buf1 []byte
 	var pId, pUrl string
-	
+
 	// Check for the existence of the webyclip-widget-3 on the page
 	err = c.Run(ctxt, isPresent(url, &buf1))
 	if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
@@ -386,16 +383,15 @@ func DoCDP(url string) {
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
 		check(err, "Error in shutting down chrome")
-	
+
 		// wait for chrome to finish
 		err = c.Wait()
 		check(err, "Error in wait to shutdown chrome")
-		
 		return
 
 	} else { 
-	
-	// Exit the code if "webyclip-widget-3" is not present.
+
+		// Exit the code if "webyclip-widget-3" is not present.
 		err = c.Run(ctxt, getProductInfo(url, `#webyclip-widget-3`, &buf, &pId, &pUrl, &url))
 		if (err != nil) && (strings.Contains(fmt.Sprint(err), "Uncaught") || strings.Contains(fmt.Sprint(err), "deadline exceeded")){
 			return
@@ -406,7 +402,7 @@ func DoCDP(url string) {
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
 		check(err, "Error in shutting down chrome")
-	
+
 		// wait for chrome to finish
 		err = c.Wait()
 		check(err, "Error in wait to shutdown chrome")
@@ -511,7 +507,7 @@ func printMemStats() {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	buf := bytes.NewBuffer(nil)
-	
+
 	buf.WriteString(strings.Repeat("=", 72) + "\n") 
 	buf.WriteString("Memory Profile:\n")
 	buf.WriteString(fmt.Sprintf("\tAlloc: %d Kb\n", mem.Alloc/1024))
@@ -530,7 +526,7 @@ func WriteToFile(record string) {
 	filePath	:= pwd() + "/" + domain + "-ProductDetails.csv"
 
 	productFile = filePath
-	
+
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 
@@ -561,13 +557,13 @@ func WriteProcessedUrlsToFile(urls []string) string{
 	domain		:= getDomain()
 	filePath	:= pwd() + "/" + domain + "-ProcessedURLs.csv"
 	urlFile = filePath
-	
+
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	check(err, "Error in file Open operation")
 	defer f.Close()
 
 	for _, url := range urls {
-		
+
 		f.WriteString(fmt.Sprintf("%s\n", url))
 	}
 	return filePath
@@ -583,7 +579,7 @@ func check(err error, str string){
 // pwd returns the current working directory through which the binary is invoked.
 // used to save the csv file.
 func pwd() string {
-	
+
 	pwd, err := os.Getwd()
 	check(err, "Error in getting current workig dir.")
 	return pwd
