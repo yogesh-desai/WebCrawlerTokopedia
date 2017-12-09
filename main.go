@@ -198,7 +198,7 @@ func DoExtract(url string){
 	ok, fUrl := filterURL(url)
 	//fmt.Println("\nok: ", ok, "fUrl: ", fUrl )
 	if ok {
-		fmt.Println("\nRunning ChromeDP for Url: ", fUrl, "\n")	
+		fmt.Println("\nRunning ChromeDP for Url: ", fUrl)
 		time.Sleep(2 * time.Millisecond)
 		wg.Add(1)
 		go func(){
@@ -321,7 +321,7 @@ func DoCDPHeadless(url string){
 	//log.Println("The buf1 string: \n", string(buf1), "\nbuf1 byte:", buf1, "\n Len(buf): ", len(buf1))
 	if (len(buf1) <= 2) || (bytes.EqualFold([]byte("," ), buf1)) {
 
-		log.Println("\nwebyclip-widget-3 is not present on page: ", url, "\n")
+		log.Println("\nwebyclip-widget-3 is not present on page: ", url)
 
 		// shutdown chrome
 		err = c.Shutdown(ctxt)
@@ -377,7 +377,7 @@ func DoCDP(url string) {
 	//log.Println("The buf1: \n", string(buf1), "\n\n Len(buf): ", len(buf1))
 	if (len(buf1) <= 2) || (bytes.EqualFold([]byte(","), buf1)) {
 
-		log.Println("\nwebyclip-widget-3 is not present on page: ", url, "\n")
+		log.Println("\nwebyclip-widget-3 is not present on page: ", url)
 		//log.Println("The buf1: \n", string(buf1))
 
 		// shutdown chrome
