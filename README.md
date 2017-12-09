@@ -14,6 +14,14 @@ It has fetcher and extractor functions. The strucutre of the webpage is consider
 
 It uses the `chromdp` package. You can check it [here](https://github.com/knq/chromedp).
 
+## Installation
+
+Install it in the usual way.
+
+```
+$ go get -u github.com/yogesh-desai/WebCrawlerTokopedia
+
+```
 ## Usage
 
 ```
@@ -59,7 +67,7 @@ Product_ID	Product_URL	Youtube_Video_URLs
 * It also has the Memory Stats to keep track of memory being used by the program.
 
 
-## TODOs
+## ToDOs
 
 * Currently, it uses GUI mode of the Google-Chrome. Need to implement the `--headless` functionality.
 * Make the code more Faster and stable.
