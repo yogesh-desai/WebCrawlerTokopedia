@@ -50,6 +50,13 @@ var (
 	stopAtURL	= flag.String("stopat", "", "Automatically stop the fetcher at a given URL.")
 	memStats	= flag.Duration("memstats", 5 * time.Minute, "Display memory statistics at a given interval.")
 	headLess	= flag.Bool("headless", true, "Run the CDP in headless mode.")
+
+	bytesPool = sync.Pool{
+		New: func() interface{} {
+			var buf  []byte
+			return buf
+		},
+	}
 )
 //================================================================================
 //================================================================================
@@ -307,7 +314,8 @@ func DoCDPHeadless(url string){
 	check(err, "\nError in creating new cdp instance")
 
 	// run task list
-	var buf, buf1 []byte
+	var buf []byte = bytesPool.Get().([]byte)
+	var buf1 []byte   = bytesPool.Get().([]byte)
 	var pId, pUrl string
 
 	// Check for the existence of the webyclip-widget-3 on the page
@@ -346,6 +354,9 @@ func DoCDPHeadless(url string){
 		record		:= fmt.Sprint(pId + "\t" + pUrl + "\t" + pLinks)
 		WriteToFile(record)
 	}
+
+	bytesPool.Put(buf)
+	bytesPool.Put(buf1)
 }
 
 // DoCDP extract all the required information from the given URL.
